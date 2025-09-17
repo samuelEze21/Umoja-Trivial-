@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id          String   @id @default(cuid())
+  phoneNumber String   @unique @db.VarChar(20)
+  isVerified  Boolean  @default(false)
+  role        UserRole @default(PLAYER)
+  umojaCoins  Int      @default(100)
+  totalScore  Int      @default(0)
+  gamesPlayed Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  gameSessions    GameSession[]
+  hintRequests    HintRequest[]
+  coinTransfers   CoinTransfer[] @relation("SentCoins")
+  receivedCoins   CoinTransfer[] @relation("ReceivedCoins")
+  progressRecords UserProgress[]
+
+  @@map("users")
+}
+
+model Question {
+  id              String            @id @default(cuid())
+  category        QuestionCategory
+  country         AfricanCountry
+  difficulty      Int               // 1-5 scale
+  level           Int               // 1-200 level
+  questionText    String            @db.Text
+  optionA         String            @db.VarChar(255)
+  optionB         String            @db.VarChar(255)
+  optionC         String            @db.VarChar(255)
+  optionD         String            @db.VarChar(255)
+  correctAnswer   CorrectOption
+  explanation     String            @db.Text
+  hint            String            @db.Text
+  hintCost        Int               @default(2)
+  isActive        Boolean           @default(true)
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  gameQuestions GameQuestion[]
+  hintRequests  HintRequest[]
+
+  @@index([category, difficulty])
+  @@index([country, level])
+  @@map("questions")
+}
+
+model GameSession {
+  id                String            @id @default(cuid())
+  userId            String
+  category          QuestionCategory?
+  questionsAnswered Int               @default(0)
+  correctAnswers    Int               @default(0)
+  currentLevel      Int               @default(1)
+  coinsEarned       Int               @default(0)
+  coinsSpent        Int               @default(0)
+  hintsUsed         Int               @default(0)
+  currentStreak     Int               @default(0)
+  maxStreak         Int               @default(0)
+  startedAt         DateTime          @default(now())
+  completedAt       DateTime?
+  isActive          Boolean           @default(true)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameQuestions GameQuestion[]
+  hintRequests  HintRequest[]
+
+  @@map("game_sessions")
+}
+
+model GameQuestion {
+  id         String    @id @default(cuid())
+  sessionId  String
+  questionId String
+  isCorrect  Boolean?
+  timeSpent  Int?
+  answeredAt DateTime?
+
+  session  GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id])
+
+  @@map("game_questions")
+}
+
+model HintRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  sessionId  String
+  questionId String
+  hintText   String   @db.Text
+  coinsSpent Int
+  createdAt  DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session  GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id])
+
+  @@map("hint_requests")
+}
+
+model UserProgress {
+  id               String           @id @default(cuid())
+  userId           String
+  category         QuestionCategory
+  currentLevel     Int              @default(1)
+  experiencePoints Int              @default(0)
+  questionsCorrect Int              @default(0)
+  questionsTotal   Int              @default(0)
+  bestStreak       Int              @default(0)
+  updatedAt        DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category])
+  @@map("user_progress")
+}
+
+model CoinTransfer {
+  id          String             @id @default(cuid())
+  fromUserId  String
+  toUserId    String
+  amount      Int
+  reason      CoinTransferReason
+  description String?            @db.VarChar(500)
+  status      TransferStatus     @default(COMPLETED)
+  createdAt   DateTime           @default(now())
+
+  fromUser User @relation("SentCoins", fields: [fromUserId], references: [id])
+  toUser   User @relation("ReceivedCoins", fields: [toUserId], references: [id])
+
+  @@map("coin_transfers")
+}
+
+model SMSVerification {
+  id          String   @id @default(cuid())
+  phoneNumber String   @db.VarChar(20)
+  code        String   @db.VarChar(6)
+  isUsed      Boolean  @default(false)
+  attempts    Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([phoneNumber, expiresAt])
+  @@map("sms_verifications")
+}
+
+// Enums
+enum UserRole {
+  PLAYER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum QuestionCategory {
+  CULTURE
+  HISTORY
+  ENTERTAINMENT
+  LEADERS
+  MARKET_INSIGHTS
+  GEOGRAPHY
+  SPORTS
+  TRADITIONAL_MUSIC
+}
+
+enum AfricanCountry {
+  NIGERIA
+  SOUTH_AFRICA
+  KENYA
+  GHANA
+  EGYPT
+}
+
+enum CorrectOption {
+  A
+  B
+  C
+  D
+}
+
+enum CoinTransferReason {
+  GAME_REWARD
+  HINT_PAYMENT
+  ADMIN_GRANT
+  USER_TRANSFER
+  LEVEL_BONUS
+  STREAK_BONUS
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+
+
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
