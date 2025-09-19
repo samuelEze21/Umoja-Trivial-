@@ -134,3 +134,10 @@ TODO.md
 
 # Prettier
 .prettierignore.local
+
+# Questions JSON file (sensitive data)
+prisma/questions.json
+
+
+prisma/*.json
+!prisma/questions.sample.json

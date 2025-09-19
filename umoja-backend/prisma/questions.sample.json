@@ -1,0 +1,16 @@
+[
+  {
+    "category": "HISTORY",
+    "country": "NIGERIA",
+    "difficulty": 1,
+    "level": 1,
+    "questionText": "Sample question: What is the capital of Nigeria?",
+    "optionA": "Lagos",
+    "optionB": "Abuja",
+    "optionC": "Kano",
+    "optionD": "Ibadan",
+    "correctAnswer": "B",
+    "explanation": "This is a sample question.",
+    "hint": "This is a sample hint."
+  }
+]
