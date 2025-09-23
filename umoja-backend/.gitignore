@@ -141,3 +141,5 @@ prisma/questions.json
 
 prisma/*.json
 !prisma/questions.sample.json
+
+firebase-service-account.json
