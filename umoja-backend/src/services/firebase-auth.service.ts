@@ -1,7 +1,7 @@
 import { firebaseAuth } from '../config/firebase-admin';
 import prisma from '../config/database';
 import { generateToken } from '../utils/jwt.util';
-// import { GAME_CONSTANTS } from '../utils/constants';
+import { GAME_CONSTANTS } from '../utils/constants';
 
 export class FirebaseAuthService {
   
@@ -35,7 +35,7 @@ export class FirebaseAuthService {
           data: {
             phoneNumber,
             isVerified: true,
-            // umojaCoins: GAME_CONSTANTS.INITIAL_COINS,
+            umojaCoins: GAME_CONSTANTS.INITIAL_COINS,
             role: 'PLAYER',
           }
         });
