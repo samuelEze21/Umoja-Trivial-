@@ -1,4 +1,5 @@
-import jwt from 'jsonwebtoken';
+// Fixed JWT Utils (`src/utils/jwt.util.ts`)
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config/environment';
 
 export interface JWTPayload {
@@ -11,23 +12,24 @@ export interface JWTPayload {
 
 /**
  * Generate JWT token for authenticated user
- * @param payload User data to encode in token
- * @returns Signed JWT token
  */
 export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
   try {
+    const tokenPayload = {
+      userId: payload.userId,
+      phoneNumber: payload.phoneNumber,
+      role: payload.role,
+    };
+
+    // Direct assignment without SignOptions interface to bypass strict typing
     const token = jwt.sign(
-      {
-        userId: payload.userId,
-        phoneNumber: payload.phoneNumber,
-        role: payload.role,
-      },
+      tokenPayload,
       config.jwt.secret,
       {
         expiresIn: config.jwt.expiresIn,
         issuer: 'umoja-trivia-api',
         audience: 'umoja-trivia-app',
-      }
+      } as SignOptions
     );
 
     return token;
@@ -39,8 +41,6 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
 
 /**
  * Verify and decode JWT token
- * @param token JWT token to verify
- * @returns Decoded token payload
  */
 export const verifyToken = (token: string): JWTPayload => {
   try {
@@ -56,15 +56,14 @@ export const verifyToken = (token: string): JWTPayload => {
     } else if (error instanceof jwt.JsonWebTokenError) {
       throw new Error('Invalid token');
     } else {
+      console.error('JWT verification error:', error);
       throw new Error('Token verification failed');
     }
   }
 };
 
 /**
- * Decode JWT token without verification (for debugging)
- * @param token JWT token to decode
- * @returns Decoded payload or null if invalid
+ * Decode JWT token without verification (for debugging/inspection)
  */
 export const decodeToken = (token: string): JWTPayload | null => {
   try {
@@ -78,8 +77,6 @@ export const decodeToken = (token: string): JWTPayload | null => {
 
 /**
  * Check if token is expired
- * @param token JWT token to check
- * @returns True if expired, false if valid
  */
 export const isTokenExpired = (token: string): boolean => {
   try {
@@ -95,13 +92,59 @@ export const isTokenExpired = (token: string): boolean => {
 
 /**
  * Generate refresh token (longer expiration)
- * @param payload User data to encode
- * @returns Long-lived refresh token
  */
 export const generateRefreshToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: '30d', // Longer expiration for refresh
-    issuer: 'umoja-trivia-api',
-    audience: 'umoja-trivia-refresh',
-  });
+  try {
+    const tokenPayload = {
+      userId: payload.userId,
+      phoneNumber: payload.phoneNumber,
+      role: payload.role,
+    };
+
+    // Direct assignment without SignOptions interface
+    const token = jwt.sign(
+      tokenPayload,
+      config.jwt.secret,
+      {
+        expiresIn: config.jwt.refreshExpiresIn,
+        issuer: 'umoja-trivia-api',
+        audience: 'umoja-trivia-refresh',
+      }as SignOptions
+    );
+
+    
+
+    return token;
+  } catch (error) {
+    console.error('Refresh token generation error:', error);
+    throw new Error('Failed to generate refresh token');
+  }
+};
+
+/**
+ * Get time until token expires (in seconds)
+ */
+export const getTokenTTL = (token: string): number => {
+  try {
+    const decoded = decodeToken(token);
+    if (!decoded || !decoded.exp) return 0;
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    const ttl = decoded.exp - currentTime;
+    return Math.max(ttl, 0);
+  } catch (error) {
+    return 0;
+  }
+};
+
+/**
+ * Extract user ID from token without full verification (useful for logging)
+ */
+export const extractUserId = (token: string): string | null => {
+  try {
+    const decoded = decodeToken(token);
+    return decoded?.userId || null;
+  } catch (error) {
+    return null;
+  }
 };

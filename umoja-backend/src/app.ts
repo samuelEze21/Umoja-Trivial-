@@ -4,6 +4,16 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { testDatabaseConnection } from './config/database';
 
+
+
+// // Import routes
+// import authRoutes from './routes/auth.routes';
+// import gameRoutes from './routes/game.routes';
+// import questionRoutes from './routes/question.routes';
+// import coinRoutes from './routes/coin.routes';
+// import adminRoutes from './routes/admin.routes';
+
+
 // Load environment variables first
 dotenv.config();
 
@@ -19,6 +29,16 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+
+// // Routes
+// app.use('/api/auth', authRoutes);
+// app.use('/api/game', gameRoutes);
+// app.use('/api/admin/questions', questionRoutes);
+// app.use('/api/coins', coinRoutes);
+// app.use('/api/admin', adminRoutes);
+
+
 
 // Health check endpoint with database test
 app.get('/health', async (req, res) => {
@@ -137,5 +157,4 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 startServer();
-
 export default app;
