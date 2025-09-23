@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { FirebaseAuthService } from '../services/firebase-auth.service';
-import { generateToken } from '../utils/jwt.util';
-import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { generateToken } from '../utils/jwt.utils';
+import {AuthenticatedRequest} from '../middleware/auth.middleware';
+
 
 export class FirebaseAuthController {
   private authService: FirebaseAuthService;
@@ -61,7 +62,7 @@ export class FirebaseAuthController {
       const newToken = generateToken({
         userId: user.userId,
         phoneNumber: user.phoneNumber,
-        role: user.role,
+        role: user.role as 'PLAYER' | 'ADMIN' | 'SUPER_ADMIN',
       });
 
       res.status(200).json({

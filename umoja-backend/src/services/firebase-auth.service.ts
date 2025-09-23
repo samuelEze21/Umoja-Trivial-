@@ -1,6 +1,6 @@
 import { firebaseAuth } from '../config/firebase-admin';
 import prisma from '../config/database';
-import { generateToken } from '../utils/jwt.util';
+import { generateToken } from '../utils/jwt.utils';
 import { GAME_CONSTANTS } from '../utils/constants';
 
 export class FirebaseAuthService {
