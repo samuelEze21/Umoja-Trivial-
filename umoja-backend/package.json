@@ -4,9 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "cross-env NODE_ENV=test jest --config=jest.config.cjs",
+    "test:watch": "jest --watch --config=jest.config.cjs",
+    "test:coverage": "jest --coverage --config=jest.config.cjs",
     "dev": "cross-env NODE_ENV=test nodemon --exec node --loader ts-node/esm src/app.ts",
     "dev:watch": "nodemon --exec node --loader ts-node/esm src/app.ts",
     "build": "tsc",
