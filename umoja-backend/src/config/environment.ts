@@ -49,14 +49,19 @@ const requiredEnvVars = [
   { key: 'FIREBASE_CLIENT_EMAIL', value: config.firebase.clientEmail },
 ];
 
-for (const envVar of requiredEnvVars) {
-  if (!envVar.value) {
-    console.error(`❌ ${envVar.key} is required`);
-    process.exit(1);
+// Skip validation in test mode to prevent process.exit
+if (process.env.NODE_ENV !== 'test') {
+  for (const envVar of requiredEnvVars) {
+    if (!envVar.value) {
+      console.error(`❌ ${envVar.key} is required`);
+      process.exit(1);
+    }
+    if (envVar.warnOnly && envVar.value === 'fallback-secret-change-in-production') {
+      console.warn(`⚠️ Using fallback ${envVar.key}. Set ${envVar.key} in production!`);
+    }
   }
-  if (envVar.warnOnly && envVar.value === 'fallback-secret-change-in-production') {
-    console.warn(`⚠️ Using fallback ${envVar.key}. Set ${envVar.key} in production!`);
-  }
+} else {
+  console.log('🧪 Running in test mode - skipping environment validation');
 }
 
 // Validate JWT expiresIn formats

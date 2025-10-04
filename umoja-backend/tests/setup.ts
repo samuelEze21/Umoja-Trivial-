@@ -1,7 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import '@jest/globals';
 import dotenv from 'dotenv';
+
+// Set NODE_ENV to test before loading any config
+process.env.NODE_ENV = 'test';
 dotenv.config({ path: '.env.test' });
+
+// Mock essential environment variables
+process.env.DATABASE_URL = 'mysql://test:test@localhost:3306/test_db';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.FIREBASE_PROJECT_ID = 'test-project-id';
+process.env.FIREBASE_PRIVATE_KEY = 'test-private-key';
+process.env.FIREBASE_CLIENT_EMAIL = 'test@example.com';
 
 // Import the mocked prisma client
 // The actual client is mocked in prisma.mock.ts which is loaded before this file
