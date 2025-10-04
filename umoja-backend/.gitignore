@@ -13,7 +13,7 @@ build/
 
 # Environment files - CRITICAL for security
 .env
-.env.local
+.env.test
 .env.development.local
 .env.test.local
 .env.production.local

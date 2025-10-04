@@ -1,9 +1,9 @@
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 
 // Type to match jsonwebtoken's SignOptions.expiresIn
-type JwtExpiresIn = number | string; // String must be like '24h', '7d'; no undefined for simplicity
+type JwtExpiresIn = number | string;
 
 interface JwtConfig {
   secret: string;
@@ -14,14 +14,18 @@ interface JwtConfig {
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  databaseUrl: process.env.DATABASE_URL || '',
+  databaseUrl: process.env.NODE_ENV === 'test'
+    ? process.env.DATABASE_URL_TEST || ''
+    : process.env.DATABASE_URL || '',
   jwt: {
     secret: process.env.JWT_SECRET || 'fallback-secret-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   } as JwtConfig,
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'test'
+      ? process.env.CORS_ORIGIN_TEST || 'http://localhost:3001'
+      : process.env.CORS_ORIGIN || 'http://localhost:3000',
   },
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || '',
@@ -31,7 +35,7 @@ export const config = {
     clientId: process.env.FIREBASE_CLIENT_ID || '',
   },
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   },
 };
@@ -76,3 +80,4 @@ try {
 console.log('✅ Environment configuration loaded');
 console.log(`📱 Environment: ${config.nodeEnv}`);
 console.log(`🔌 Port: ${config.port}`);
+console.log(`📊 Database URL: ${config.databaseUrl}`);
