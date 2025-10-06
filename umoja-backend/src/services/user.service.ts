@@ -1,28 +1,17 @@
 import prisma from '../config/database';
-import { 
-  UserProfile, 
-  UpdateUserData, 
+import {
+  UserProfile,
+  UpdateUserData,
   UserProgressData,
-  NotFoundError, 
-  ValidationError 
+  NotFoundError,
+  ValidationError,
+  QuestionCategory,
 } from '../types';
 
 export class UserService {
   async getUserById(userId: string): Promise<UserProfile> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        progressRecords: {
-          select: {
-            category: true,
-            currentLevel: true,
-            experiencePoints: true,
-            questionsCorrect: true,
-            questionsTotal: true,
-            bestStreak: true,
-          },
-        },
-      },
     });
 
     if (!user) {
@@ -33,11 +22,12 @@ export class UserService {
       id: user.id,
       phoneNumber: user.phoneNumber,
       email: (user as any).email || undefined,
-      role: user.role,
-      umojaCoins: user.umojaCoins,
-      totalScore: user.totalScore,
-      gamesPlayed: user.gamesPlayed,
-      isVerified: user.isVerified,
+      role: (user as any).role,
+      // Cast to any to avoid compile-time mismatch with Prisma types
+      umojaCoins: (user as any).umojaCoins,
+      totalScore: (user as any).totalScore,
+      gamesPlayed: (user as any).gamesPlayed,
+      isVerified: (user as any).isVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -100,11 +90,11 @@ export class UserService {
       phoneNumber: updatedUser.phoneNumber,
       // Convert null to undefined for optional email
       email: (updatedUser as any).email || undefined,
-      role: updatedUser.role,
-      umojaCoins: updatedUser.umojaCoins,
-      totalScore: updatedUser.totalScore,
-      gamesPlayed: updatedUser.gamesPlayed,
-      isVerified: updatedUser.isVerified,
+      role: (updatedUser as any).role,
+      umojaCoins: (updatedUser as any).umojaCoins,
+      totalScore: (updatedUser as any).totalScore,
+      gamesPlayed: (updatedUser as any).gamesPlayed,
+      isVerified: (updatedUser as any).isVerified,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
@@ -131,7 +121,15 @@ export class UserService {
       },
     });
 
-    return progressRecords;
+    // Map to app-level types to avoid enum type mismatch
+    return progressRecords.map((r: any) => ({
+      category: r.category as unknown as QuestionCategory,
+      currentLevel: r.currentLevel,
+      experiencePoints: r.experiencePoints,
+      questionsCorrect: r.questionsCorrect,
+      questionsTotal: r.questionsTotal,
+      bestStreak: r.bestStreak,
+    }));
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -153,7 +151,8 @@ export class UserService {
     
     const stats = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
+      // Cast select to any to avoid compile-time mismatch with generated Prisma types
+      select: ({
         umojaCoins: true,
         totalScore: true,
         gamesPlayed: true,
@@ -176,7 +175,7 @@ export class UserService {
             maxStreak: true,
           },
         },
-      },
+      } as any),
     });
 
     return {

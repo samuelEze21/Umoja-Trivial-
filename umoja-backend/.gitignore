@@ -103,7 +103,6 @@ temp/
 .tmp/
 
 # Docker
-.dockerignore
 docker-compose.override.yml
 
 # Local development
@@ -111,6 +110,10 @@ docker-compose.override.yml
 scratch/
 notes.txt
 TODO.md
+
+# Local MySQL dev data
+mysql/**
+!mysql/.gitkeep
 
 # Certificates and keys (if any)
 *.pem

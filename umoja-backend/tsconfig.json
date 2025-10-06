@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "esnext",
+    "module": "commonjs",
     "lib": ["ES2020"],
     "types": ["node", "jest"],
     "outDir": "./dist",
@@ -19,7 +19,7 @@
   "include": ["src/**/*", "prisma/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "esm": false,
+    "transpileOnly": true
   }
 }

@@ -6,9 +6,9 @@ import { testDatabaseConnection } from './config/database';
 
 
 
-// // Import routes
-// import authRoutes from './routes/auth.routes';
-// import gameRoutes from './routes/game.routes';
+// Import routes
+import authRoutes from './routes/auth.routes';
+import gameRoutes from './routes/game.routes';
 // import questionRoutes from './routes/question.routes';
 // import coinRoutes from './routes/coin.routes';
 // import adminRoutes from './routes/admin.routes';
@@ -31,9 +31,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 
-// // Routes
-// app.use('/api/auth', authRoutes);
-// app.use('/api/game', gameRoutes);
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/game', gameRoutes);
 // app.use('/api/admin/questions', questionRoutes);
 // app.use('/api/coins', coinRoutes);
 // app.use('/api/admin', adminRoutes);

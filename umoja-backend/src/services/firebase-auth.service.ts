@@ -1,12 +1,25 @@
 import { firebaseAuth } from '../config/firebase-admin';
+import { config } from '../config/environment';
 import prisma from '../config/database';
 import { generateToken } from '../utils/jwt.utils';
-import { GAME_CONSTANTS } from '../utils/constants';
+import { GAME_CONSTANTS } from '../utils/gameConstants';
 
 export class FirebaseAuthService {
   
   async verifyFirebaseToken(idToken: string) {
     try {
+      // In test mode, accept mock tokens like "mock:+1234567890"
+      if (config.nodeEnv === 'test') {
+        if (idToken && idToken.startsWith('mock:')) {
+          const phone = idToken.substring('mock:'.length);
+          if (!phone) {
+            throw new Error('Mock token missing phone number');
+          }
+          return { phone_number: phone } as any;
+        }
+        throw new Error('Invalid Firebase token');
+      }
+
       const decodedToken = await firebaseAuth.verifyIdToken(idToken);
       return decodedToken;
     } catch (error) {
@@ -32,12 +45,12 @@ export class FirebaseAuthService {
       if (!user) {
         // Create new user
         user = await prisma.user.create({
-          data: {
+          data: ({
             phoneNumber,
             isVerified: true,
             umojaCoins: GAME_CONSTANTS.INITIAL_COINS,
             role: 'PLAYER',
-          }
+          } as any),
         });
 
         console.log(`✅ New user created: ${phoneNumber}`);
@@ -63,11 +76,11 @@ export class FirebaseAuthService {
         user: {
           id: user.id,
           phoneNumber: user.phoneNumber,
-          role: user.role,
-          umojaCoins: user.umojaCoins,
-          totalScore: user.totalScore,
-          gamesPlayed: user.gamesPlayed,
-          isVerified: user.isVerified,
+          role: (user as any).role,
+          umojaCoins: (user as any).umojaCoins,
+          totalScore: (user as any).totalScore,
+          gamesPlayed: (user as any).gamesPlayed,
+          isVerified: (user as any).isVerified,
         }
       };
 
@@ -80,7 +93,7 @@ export class FirebaseAuthService {
   async getUserProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
+      select: ({
         id: true,
         phoneNumber: true,
         role: true,
@@ -98,7 +111,7 @@ export class FirebaseAuthService {
             questionsTotal: true,
           }
         }
-      }
+      } as any)
     });
 
     if (!user) {

@@ -14,6 +14,9 @@ const users: any[] = [];
 const gameSessions: any[] = [];
 const coinTransfers: any[] = [];
 const userProgress: any[] = [];
+const questions: any[] = [];
+const gameQuestions: any[] = [];
+const hintRequests: any[] = [];
 
 const matchWhere = (item: any, where?: Where) => {
   if (!where) return true;
@@ -145,6 +148,9 @@ const prismaMock: any = {
     findFirst: jest.fn().mockImplementation(async ({ where }: { where?: Where }) => {
       return clone(gameSessions.find(s => matchWhere(s, where)) ?? null);
     }),
+    findUnique: jest.fn().mockImplementation(async ({ where }: { where: Where }) => {
+      return clone(gameSessions.find(s => matchWhere(s, where)) ?? null);
+    }),
     update: jest.fn().mockImplementation(async ({ where, data }: UpdateArgs<any>) => {
       const idx = gameSessions.findIndex(s => matchWhere(s, where));
       if (idx === -1) throw new Error('Record not found');
@@ -183,6 +189,84 @@ const prismaMock: any = {
         }
       });
       return { count };
+    }),
+  },
+  // Question model mock
+  question: {
+    create: jest.fn().mockImplementation(async ({ data }: CreateArgs<any>) => {
+      const newItem = { id: `q_${questions.length + 1}`, createdAt: new Date(), updatedAt: new Date(), ...clone(data) };
+      questions.push(newItem);
+      return clone(newItem);
+    }),
+    findFirst: jest.fn().mockImplementation(async ({ where }: FindArgs = {}) => {
+      return clone(questions.find(q => matchWhere(q, where)) ?? null);
+    }),
+    findUnique: jest.fn().mockImplementation(async ({ where }: { where: Where }) => {
+      return clone(questions.find(q => matchWhere(q, where)) ?? null);
+    }),
+    deleteMany: jest.fn().mockImplementation(async (args?: FindArgs) => {
+      if (!args?.where) {
+        const count = questions.length;
+        questions.length = 0;
+        return { count };
+      }
+      const before = questions.length;
+      for (let i = questions.length - 1; i >= 0; i--) {
+        if (matchWhere(questions[i], args.where)) questions.splice(i, 1);
+      }
+      return { count: before - questions.length };
+    }),
+  },
+  // GameQuestion model mock
+  gameQuestion: {
+    create: jest.fn().mockImplementation(async ({ data }: CreateArgs<any>) => {
+      const newItem = { id: `gq_${gameQuestions.length + 1}`, createdAt: new Date(), updatedAt: new Date(), ...clone(data) };
+      gameQuestions.push(newItem);
+      return clone(newItem);
+    }),
+    findFirst: jest.fn().mockImplementation(async ({ where }: FindArgs = {}) => {
+      return clone(gameQuestions.find(gq => matchWhere(gq, where)) ?? null);
+    }),
+    update: jest.fn().mockImplementation(async ({ where, data }: UpdateArgs<any>) => {
+      const idx = gameQuestions.findIndex(gq => matchWhere(gq, where));
+      if (idx === -1) throw new Error('Record not found');
+      gameQuestions[idx] = { ...gameQuestions[idx], ...clone(data), updatedAt: new Date() };
+      return clone(gameQuestions[idx]);
+    }),
+    deleteMany: jest.fn().mockImplementation(async (args?: FindArgs) => {
+      if (!args?.where) {
+        const count = gameQuestions.length;
+        gameQuestions.length = 0;
+        return { count };
+      }
+      const before = gameQuestions.length;
+      for (let i = gameQuestions.length - 1; i >= 0; i--) {
+        if (matchWhere(gameQuestions[i], args.where)) gameQuestions.splice(i, 1);
+      }
+      return { count: before - gameQuestions.length };
+    }),
+  },
+  // HintRequest model mock
+  hintRequest: {
+    create: jest.fn().mockImplementation(async ({ data }: CreateArgs<any>) => {
+      const newItem = { id: `hr_${hintRequests.length + 1}`, createdAt: new Date(), updatedAt: new Date(), ...clone(data) };
+      hintRequests.push(newItem);
+      return clone(newItem);
+    }),
+    findMany: jest.fn().mockImplementation(async ({ where }: FindArgs = {}) => {
+      return clone(hintRequests.filter(hr => matchWhere(hr, where)));
+    }),
+    deleteMany: jest.fn().mockImplementation(async (args?: FindArgs) => {
+      if (!args?.where) {
+        const count = hintRequests.length;
+        hintRequests.length = 0;
+        return { count };
+      }
+      const before = hintRequests.length;
+      for (let i = hintRequests.length - 1; i >= 0; i--) {
+        if (matchWhere(hintRequests[i], args.where)) hintRequests.splice(i, 1);
+      }
+      return { count: before - hintRequests.length };
     }),
   },
 };
