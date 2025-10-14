@@ -14,11 +14,14 @@
     <h1>Get Firebase ID Token (Phone Auth)</h1>
     <p>Use a Test phone number and code you configured in Firebase Console.</p>
 
-    <label>Phone number (E.164, e.g. +15555550100)</label>
-    <input id="phone" placeholder="+15555550100" />
+    <label>Phone number (E.164, e.g. +23470107200069)</label>
+    <input id="phone" placeholder="+234 701 072 0069" value="+2347010720069" />
+
+    <!-- Add a container for reCAPTCHA (invisible) -->
+    <div id="recaptcha-container" style="min-height:24px;"></div>
 
     <label>Test code (e.g. 123456)</label>
-    <input id="code" placeholder="123456" />
+    <input id="code" placeholder="112233" />
 
     <button id="send">Sign In and Get ID Token</button>
 
@@ -31,14 +34,15 @@
 
       // Replace with your project's Firebase config from Firebase Console
       const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID",
+        apiKey: "AIzaSyBz-lXlS6cQAygl0aLzu0RIT_n1KusE_xI",
+        authDomain: "umoja-auth.firebaseapp.com",
+        projectId: "umoja-auth",
+        storageBucket: "umoja-auth.firebasestorage.app",
+        messagingSenderId: "258073848802",
+        appId: "1:258073848802:web:ad9a14ecebc8d6830927bb",
       };
 
+      
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
 
@@ -49,19 +53,42 @@
       const codeInput = document.getElementById('code');
       const out = document.getElementById('out');
 
-      // Invisible reCAPTCHA verifier (still required by the SDK)
-      const verifierContainer = document.createElement('div');
-      document.body.appendChild(verifierContainer);
-      const verifier = new RecaptchaVerifier(auth, verifierContainer, { size: 'invisible' });
+      function log(msg) {
+        out.textContent = msg;
+        console.log(msg);
+      }
+
+      // Initialize and render invisible reCAPTCHA
+      let recaptcha;
+      try {
+        recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+        await recaptcha.render();
+        log('reCAPTCHA ready.');
+      } catch (e) {
+        log('Error initializing reCAPTCHA: ' + (e?.message || e));
+      }
 
       document.getElementById('send').onclick = async () => {
         try {
-          const confirmation = await signInWithPhoneNumber(auth, phoneInput.value.trim(), verifier);
-          const credential = await confirmation.confirm(codeInput.value.trim());
-          const idToken = await credential.user.getIdToken();
+          const raw = phoneInput.value.trim();
+          const compact = raw.replace(/\s+/g, '');
+          const phone = compact.startsWith('+') ? compact : `+${compact}`;
+          const code = codeInput.value.trim();
+          if (!phone) return log('Enter phone number in E.164 format, e.g., +2347010720069');
+          if (!code) return log('Enter the test verification code from Firebase Console.');
+
+          log('Sending code...');
+          const confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
+          log('Code sent. Confirming...');
+          const credential = await confirmation.confirm(code);
+          log('Confirmed. Getting IdToken...');
+          const idToken = await credential.user.getIdToken(true);
           out.textContent = idToken;
+          console.log('IdToken:', idToken);
+          log('Success. Token shown above.');
         } catch (e) {
-          out.textContent = 'Error: ' + (e?.message || e);
+          log('Error: ' + (e?.message || e));
+          console.error(e);
         }
       };
     </script>

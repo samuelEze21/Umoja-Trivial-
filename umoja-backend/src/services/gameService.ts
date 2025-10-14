@@ -6,15 +6,20 @@ import { generateGuestId } from '../utils/gameUtils';
 const prisma = new PrismaClient();
 
 export const startGameSession = async (userId?: string, isAuthenticated = false) => {
-  const resolvedUserId = isAuthenticated && userId ? userId : (userId ?? generateGuestId());
-  return await prisma.gameSession.create({
-    data: {
-      userId: resolvedUserId!,
-      level: GAME_CONSTANTS.INITIAL_LEVEL,
-      requiredCorrect: GAME_HELPERS.getRequiredCorrect(GAME_CONSTANTS.INITIAL_LEVEL),
-      isGuest: !isAuthenticated,
-    } as any,
-  });
+  const data: any = {
+    level: GAME_CONSTANTS.INITIAL_LEVEL,
+    requiredCorrect: GAME_HELPERS.getRequiredCorrect(GAME_CONSTANTS.INITIAL_LEVEL),
+    isGuest: !isAuthenticated,
+  };
+
+  // Assign userId for both authenticated and guest sessions
+  if (isAuthenticated && userId) {
+    data.userId = userId;
+  } else {
+    data.userId = generateGuestId();
+  }
+
+  return await prisma.gameSession.create({ data });
 };
 
 

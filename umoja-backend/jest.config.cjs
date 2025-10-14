@@ -14,6 +14,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',         // Output coverage reports here
   coverageReporters: ['text', 'lcov', 'html'], // Coverage report formats
-  setupFilesAfterEnv: ['<rootDir>/tests/firebase.mock.ts', '<rootDir>/tests/prisma.mock.ts', '<rootDir>/tests/setup.ts']
+  setupFiles: ['<rootDir>/tests/prisma.mock.ts'],
+  setupFilesAfterEnv: ['<rootDir>/tests/firebase.mock.ts', '<rootDir>/tests/setup.ts']
   // Removed moduleNameMapper to avoid ESM/CommonJS conflicts
 };

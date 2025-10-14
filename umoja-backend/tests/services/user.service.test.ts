@@ -77,7 +77,7 @@ describe('UserService', () => {
       });
 
       await expect(userService.updateUserProfile(testUser.id, {
-        phoneNumber: anotherUser.phoneNumber,
+        phoneNumber: anotherUser.phoneNumber!,
       }))
         .rejects
         .toThrow(ValidationError);
@@ -90,7 +90,7 @@ describe('UserService', () => {
       await prisma.userProgress.create({
         data: {
           userId: testUser.id,
-          category: 'HISTORY',
+          category: 'HISTORY' as any,
           currentLevel: 5,
           experiencePoints: 150,
           questionsCorrect: 10,

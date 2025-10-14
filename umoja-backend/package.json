@@ -4,7 +4,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest --config=jest.config.cjs",
+    "test": "cross-env NODE_ENV=test jest --config=jest.config.cjs --forceExit --detectOpenHandles",
     "test:watch": "jest --watch --config=jest.config.cjs",
     "test:coverage": "jest --coverage --config=jest.config.cjs",
     "dev": "cross-env NODE_ENV=test nodemon --exec ts-node --transpile-only src/app.ts",
@@ -31,7 +31,8 @@
     "firebase-admin": "^13.5.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.0"
+    "mysql2": "^3.11.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

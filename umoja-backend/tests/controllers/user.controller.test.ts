@@ -11,16 +11,17 @@ const mockAuthenticateToken = authenticateToken as jest.MockedFunction<typeof au
 
 describe('UserController', () => {
   let app: express.Application;
+  let server: any;
   let userController: UserController;
   let testUser: any;
 
   beforeEach(async () => {
     app = express();
     app.use(express.json());
-    
+
     userController = new UserController();
-    
-    // Mock authentication middleware
+
+    // Mock authentication middleware (sync to avoid lingering microtasks)
     mockAuthenticateToken.mockImplementation(async (req: any, res, next) => {
       req.user = {
         userId: testUser?.id || 'test-user-id',
@@ -31,11 +32,16 @@ describe('UserController', () => {
     });
 
     // Set up routes
-    app.get('/profile', mockAuthenticateToken, userController.getProfile);
-    app.put('/profile', mockAuthenticateToken, userController.updateProfile);
-    app.get('/progress', mockAuthenticateToken, userController.getProgress);
-    app.get('/stats', mockAuthenticateToken, userController.getStats);
-    app.delete('/profile', mockAuthenticateToken, userController.deleteProfile);
+    const router = express.Router();
+    router.get('/profile', mockAuthenticateToken, userController.getProfile);
+    router.put('/profile', mockAuthenticateToken, userController.updateProfile);
+    router.get('/progress', mockAuthenticateToken, userController.getProgress);
+    router.get('/stats', mockAuthenticateToken, userController.getStats);
+    router.delete('/profile', mockAuthenticateToken, userController.deleteProfile);
+    app.use('/api/users', router);
+
+    // Start a real HTTP server for Supertest
+    server = app.listen();
 
     // Create test user
     testUser = await prisma.user.create({
@@ -49,10 +55,18 @@ describe('UserController', () => {
     });
   });
 
-  describe('GET /profile', () => {
-    it('should return user profile successfully', async () => {
-      const response = await request(app)
-        .get('/profile')
+  afterEach(async () => {
+    jest.restoreAllMocks();
+    // Close server to ensure all sockets/handles are released
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+  });
+
+  describe('GET /api/users/profile', () => {
+    it('should return user profile', async () => {
+      const response = await request(server)
+        .get('/api/users/profile')
+        .set('Connection', 'close')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -61,7 +75,7 @@ describe('UserController', () => {
     });
 
     it('should handle user not found error', async () => {
-      // Mock user with non-existent ID
+      // Mock user with non-existent ID (sync)
       mockAuthenticateToken.mockImplementation(async (req: any, res, next) => {
         req.user = {
           userId: 'non-existent-id',
@@ -71,8 +85,9 @@ describe('UserController', () => {
         next();
       });
 
-      const response = await request(app)
-        .get('/profile')
+      const response = await request(server)
+        .get('/api/users/profile')
+        .set('Connection', 'close')
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -80,14 +95,15 @@ describe('UserController', () => {
     });
   });
 
-  describe('PUT /profile', () => {
+  describe('PUT /api/users/profile', () => {
     it('should update user profile successfully', async () => {
       const updateData = {
         email: 'updated@example.com',
       };
 
-      const response = await request(app)
-        .put('/profile')
+      const response = await request(server)
+        .put('/api/users/profile')
+        .set('Connection', 'close')
         .send(updateData)
         .expect(200);
 
@@ -100,8 +116,9 @@ describe('UserController', () => {
         phoneNumber: '', // Invalid phone number
       };
 
-      const response = await request(app)
-        .put('/profile')
+      const response = await request(server)
+        .put('/api/users/profile')
+        .set('Connection', 'close')
         .send(updateData)
         .expect(400);
 
@@ -109,13 +126,13 @@ describe('UserController', () => {
     });
   });
 
-  describe('GET /progress', () => {
+  describe('GET /api/users/progress', () => {
     it('should return user progress successfully', async () => {
       // Create progress data
       await prisma.userProgress.create({
         data: {
           userId: testUser.id,
-          category: 'HISTORY',
+          category: 'HISTORY' as any,
           currentLevel: 5,
           experiencePoints: 150,
           questionsCorrect: 10,
@@ -124,13 +141,19 @@ describe('UserController', () => {
         },
       });
 
-      const response = await request(app)
-        .get('/progress')
+      const response = await request(server)
+        .get('/api/users/progress')
+        .set('Connection', 'close')
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].category).toBe('HISTORY');
     });
+  });
+
+  afterAll(async () => {
+    // Final microtask drain to ensure all handles are closed
+    await new Promise((resolve) => setImmediate(resolve));
   });
 });

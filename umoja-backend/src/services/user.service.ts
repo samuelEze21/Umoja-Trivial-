@@ -20,7 +20,7 @@ export class UserService {
 
     return {
       id: user.id,
-      phoneNumber: user.phoneNumber,
+      phoneNumber: user.phoneNumber ?? '',
       email: (user as any).email || undefined,
       role: (user as any).role,
       // Cast to any to avoid compile-time mismatch with Prisma types
@@ -87,7 +87,7 @@ export class UserService {
 
     return {
       id: updatedUser.id,
-      phoneNumber: updatedUser.phoneNumber,
+      phoneNumber: updatedUser.phoneNumber ?? '',
       // Convert null to undefined for optional email
       email: (updatedUser as any).email || undefined,
       role: (updatedUser as any).role,

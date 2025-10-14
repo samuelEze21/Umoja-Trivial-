@@ -8,6 +8,8 @@ import { testDatabaseConnection } from './config/database';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import path from 'path';
+import { mountSwagger } from './config/swagger';
 import gameRoutes from './routes/game.routes';
 // import questionRoutes from './routes/question.routes';
 // import coinRoutes from './routes/coin.routes';
@@ -21,8 +23,18 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+
+// Flexible CORS via env: CORS_ORIGINS="http://localhost:3000,https://your-frontend.com"
+const allowedOriginsEnv = process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000';
+const allowedOrigins = allowedOriginsEnv.split(',').map(o => o.trim());
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (curl/Postman without Origin)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
@@ -32,7 +44,29 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Routes
-app.use('/api/auth', authRoutes);
+  app.use('/api/auth', authRoutes);
+  mountSwagger(app);
+
+  // Serve Firebase idToken helper page
+  // In app.get('/idtoken-helper.html', (req, res) => { ... })
+  app.get('/idtoken-helper.html', (req, res) => {
+    const helperPath = path.resolve(process.cwd(), 'src', 'idtoken-helper.html');
+
+    // Loosen CSP for this page only to permit inline scripts and Firebase SDK
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self' https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://*.firebaseio.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "connect-src 'self' https://www.gstatic.com https://*.firebaseio.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
+        "frame-src 'self' https://www.google.com https://www.gstatic.com https://www.recaptcha.net"
+      ].join('; ')
+    );
+
+    res.sendFile(helperPath);
+  });
 app.use('/api/game', gameRoutes);
 // app.use('/api/admin/questions', questionRoutes);
 // app.use('/api/coins', coinRoutes);
@@ -89,6 +123,9 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// Serve static files from src (for helper HTML)
+app.use(express.static(path.join(__dirname)));
+
 // Global error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Global error:', error);
@@ -110,7 +147,7 @@ app.use((req, res) => {
 });
 
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const startServer = async () => {
   try {

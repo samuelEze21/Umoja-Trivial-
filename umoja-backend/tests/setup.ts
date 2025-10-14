@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import '@jest/globals';
+import { jest } from '@jest/globals';
 import dotenv from 'dotenv';
 
 // Set NODE_ENV to test before loading any config
@@ -7,7 +8,7 @@ process.env.NODE_ENV = 'test';
 dotenv.config({ path: '.env.test' });
 
 // Mock essential environment variables
-process.env.DATABASE_URL = 'mysql://test:test@localhost:3306/test_db';
+process.env.DATABASE_URL = 'mysql://root:@localhost:3306/umoja_trivia';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.FIREBASE_PROJECT_ID = 'test-project-id';
 process.env.FIREBASE_PRIVATE_KEY = 'test-private-key';
@@ -25,11 +26,17 @@ const prisma = new PrismaClient();
 beforeAll(async () => {
   // No need to connect to database with mocks
   console.log('Using mocked Prisma client for tests');
+  // Silence error logs during tests to reduce noise
+  jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterAll(async () => {
   // No real cleanup needed with mocks
   console.log('Test cleanup complete');
+  // Ensure prisma disconnect is called to release any handles
+  await prisma.$disconnect();
+  // Restore all mocked console methods
+  jest.restoreAllMocks();
 });
 
 beforeEach(async () => {

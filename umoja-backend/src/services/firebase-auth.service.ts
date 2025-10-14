@@ -31,11 +31,12 @@ export class FirebaseAuthService {
     try {
       // Verify the Firebase token
       const decodedToken = await this.verifyFirebaseToken(idToken);
-      const phoneNumber = decodedToken.phone_number;
-
-      if (!phoneNumber) {
+      const phoneNumberFromToken = decodedToken.phone_number;
+      
+      if (!phoneNumberFromToken) {
         throw new Error('Phone number not found in token');
       }
+      const phoneNumber = phoneNumberFromToken;
 
       // Find or create user in our database
       let user = await prisma.user.findUnique({
@@ -67,7 +68,7 @@ export class FirebaseAuthService {
       // Generate our JWT token
       const token = generateToken({
         userId: user.id,
-        phoneNumber: user.phoneNumber,
+        phoneNumber: user.phoneNumber ?? phoneNumber,
         role: user.role,
       });
 

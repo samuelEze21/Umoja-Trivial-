@@ -110,6 +110,8 @@ docker-compose.override.yml
 scratch/
 notes.txt
 TODO.md
+src/idtoken-helper.html
+src/idtoken-helper.local.html
 
 # Local MySQL dev data
 mysql/**
