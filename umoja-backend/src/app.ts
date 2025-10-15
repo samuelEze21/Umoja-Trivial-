@@ -3,8 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { testDatabaseConnection } from './config/database';
-
-
+import questionRoutes from "./routes/questionRoutes";
+import { config } from './config/environment';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -24,15 +24,31 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// Flexible CORS via env: CORS_ORIGINS="http://localhost:3000,https://your-frontend.com"
-const allowedOriginsEnv = process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000';
+// CORS configuration from environment
+const allowedOriginsEnv = config.cors.origin;
 const allowedOrigins = allowedOriginsEnv.split(',').map(o => o.trim());
+
+console.log('🔧 CORS Configuration:');
+console.log('   Allowed Origins Env:', allowedOriginsEnv);
+console.log('   Allowed Origins Array:', allowedOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('🌐 CORS Request - Origin:', origin);
+    console.log('🔍 Checking against allowed origins:', allowedOrigins);
+    
     // Allow non-browser requests (curl/Postman without Origin)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin) {
+      console.log('✅ Allowing request without origin');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ Origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('❌ Origin not allowed:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -68,6 +84,8 @@ app.use(express.urlencoded({ extended: true }));
     res.sendFile(helperPath);
   });
 app.use('/api/game', gameRoutes);
+app.use("/api/questions", questionRoutes);
+
 // app.use('/api/admin/questions', questionRoutes);
 // app.use('/api/coins', coinRoutes);
 // app.use('/api/admin', adminRoutes);

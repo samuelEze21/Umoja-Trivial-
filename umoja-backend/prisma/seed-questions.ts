@@ -32,9 +32,36 @@ const getHintCost = (difficulty: number): number => {
 const mapCategory = (category: string): string => {
   if (!category) return 'CURRENT_AFFAIRS'; // Handle undefined category
   
-  const normalizedCategory = category.toUpperCase().replace(/\s+/g, '_');
+  const normalizedCategory = category.toLowerCase();
   
-  switch (normalizedCategory) {
+  // Handle the specific categories from the JSON file
+  if (normalizedCategory.includes('music') || normalizedCategory.includes('afrobeats')) {
+    return 'MUSIC';
+  }
+  if (normalizedCategory.includes('food')) {
+    return 'FOOD';
+  }
+  if (normalizedCategory.includes('places')) {
+    return 'PLACES';
+  }
+  if (normalizedCategory.includes('famous people') || normalizedCategory.includes('people')) {
+    return 'PEOPLE';
+  }
+  if (normalizedCategory.includes('festivals') || normalizedCategory.includes('culture')) {
+    return 'CULTURE';
+  }
+  if (normalizedCategory.includes('current events') || normalizedCategory.includes('current affairs')) {
+    return 'CURRENT_AFFAIRS';
+  }
+  // Map other categories to CURRENT_AFFAIRS for now (Sports, Fashion, Internet Trends, BBNaija)
+  if (normalizedCategory.includes('sports') || normalizedCategory.includes('fashion') || 
+      normalizedCategory.includes('internet trends') || normalizedCategory.includes('bbnaija')) {
+    return 'CURRENT_AFFAIRS';
+  }
+  
+  // Fallback for exact matches (in case some categories are already in the right format)
+  const upperCategory = category.toUpperCase().replace(/\s+/g, '_');
+  switch (upperCategory) {
     case 'PLACES': return 'PLACES';
     case 'PEOPLE': return 'PEOPLE';
     case 'FOOD': return 'FOOD';
@@ -42,7 +69,7 @@ const mapCategory = (category: string): string => {
     case 'DRINKS': return 'DRINKS';
     case 'MUSIC': return 'MUSIC';
     case 'CURRENT_AFFAIRS': return 'CURRENT_AFFAIRS';
-    case 'HISTORY': return 'CURRENT_AFFAIRS'; // Map HISTORY to CURRENT_AFFAIRS
+    case 'HISTORY': return 'CURRENT_AFFAIRS';
     default: return 'CURRENT_AFFAIRS';
   }
 };
@@ -127,8 +154,8 @@ async function seedQuestions() {
         const mappedCorrectAnswer = mapCorrectOption(q.correctAnswer);
         
         return {
-          category: mappedCategory,
-          country: mappedCountry,
+          category: mappedCategory as any,
+          country: mappedCountry as any,
           difficulty: q.difficulty || 1,
           level: q.level || 1,
           questionText: q.questionText,
@@ -136,7 +163,7 @@ async function seedQuestions() {
           optionB: q.optionB,
           optionC: q.optionC,
           optionD: q.optionD,
-          correctAnswer: mappedCorrectAnswer,
+          correctAnswer: mappedCorrectAnswer as any,
           explanation: q.explanation || '',
           hint: q.hint || '',
           hintCost: getHintCost(q.difficulty || 1),
@@ -146,7 +173,7 @@ async function seedQuestions() {
       });
 
       await prisma.question.createMany({
-        data: questionsToInsert,
+        data: questionsToInsert as any,
         skipDuplicates: true,
       });
 

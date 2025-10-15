@@ -8,6 +8,14 @@ const router = Router();
 // Start a session (guest or authenticated)
 router.post('/session', optionalAuth, gameRateLimit, gameController.startSession);
 
+// ✅ Preload selected question IDs into an active session
+router.post(
+  '/session/:sessionId/preload',
+  optionalAuth,
+  gameRateLimit,
+  gameController.preloadQuestions
+);
+
 // Get next question for a session
 router.get('/session/:sessionId/question', optionalAuth, gameRateLimit, gameController.getQuestion);
 

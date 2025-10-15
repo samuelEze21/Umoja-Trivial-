@@ -12,12 +12,11 @@ export const startGameSession = async (userId?: string, isAuthenticated = false)
     isGuest: !isAuthenticated,
   };
 
-  // Assign userId for both authenticated and guest sessions
+  // Only set userId for authenticated users, leave null for guests
   if (isAuthenticated && userId) {
     data.userId = userId;
-  } else {
-    data.userId = generateGuestId();
   }
+  // For guests, userId remains undefined/null
 
   return await prisma.gameSession.create({ data });
 };
@@ -68,7 +67,7 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
       where: { id: sessionId },
       data: { questionsAnswered: { increment: 1 } },
     });
-    return { isCorrect, coinsEarned: 0, requireRegistration: false };
+    return { isCorrect, correctAnswer: q.correctAnswer, coinsEarned: 0, requireRegistration: false };
   }
 
   const coinsEarned = GAME_HELPERS.getCoinsEarned(s.level);
@@ -87,7 +86,7 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
   if (reachedThreshold) {
     if (!isAuthenticated && s.level === GAME_CONSTANTS.INITIAL_LEVEL) {
       // Registration required after 20 correct at level 1 for guests
-      return { isCorrect, coinsEarned, requireRegistration: true };
+      return { isCorrect, correctAnswer: q.correctAnswer, coinsEarned, requireRegistration: true };
     }
     // Authenticated users level up
     await prisma.gameSession.update({
@@ -101,6 +100,7 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
 
   return {
     isCorrect,
+    correctAnswer: q.correctAnswer,
     coinsEarned,
     requireRegistration: false,
   };

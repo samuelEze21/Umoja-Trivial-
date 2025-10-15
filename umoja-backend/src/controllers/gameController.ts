@@ -1,7 +1,10 @@
-// startSession, getQuestion, submitAnswer, getHint
+// startSession, getQuestion, submitAnswer, getHint, preloadQuestions
 import { Response } from 'express';
 import * as gameService from '../services/gameService';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const startSession = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -56,5 +59,38 @@ export const getHint = async (req: AuthenticatedRequest, res: Response) => {
     res.json({ success: true, data: { hintText } });
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message || 'Failed to get hint' });
+  }
+};
+
+// ✅ NEW HANDLER — preload questions into a game session
+export const preloadQuestions = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { questionIds } = req.body || {};
+
+    if (!sessionId || !Array.isArray(questionIds) || questionIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'sessionId and a non-empty questionIds array are required',
+      });
+      return;
+    }
+
+    // Verify that session exists and is active
+    const session = await prisma.gameSession.findUnique({ where: { id: sessionId } });
+    if (!session || !session.isActive) {
+      res.status(404).json({ success: false, error: 'Invalid or inactive session' });
+      return;
+    }
+
+    const data = questionIds.map((qId: string) => ({ sessionId, questionId: qId }));
+
+    // createMany ensures no duplicates are inserted
+    await prisma.gameQuestion.createMany({ data, skipDuplicates: true });
+
+    res.status(201).json({ success: true, data: { created: data.length } });
+  } catch (error: any) {
+    console.error('preloadQuestions error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to preload questions' });
   }
 };

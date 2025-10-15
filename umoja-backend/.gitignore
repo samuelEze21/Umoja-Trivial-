@@ -148,3 +148,5 @@ prisma/*.json
 !prisma/questions.sample.json
 
 firebase-service-account.json
+
+idtoken-helper.html
