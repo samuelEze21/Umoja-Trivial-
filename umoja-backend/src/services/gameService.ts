@@ -27,16 +27,32 @@ export const getNextQuestion = async (sessionId: string) => {
   const s: any = session;
   if (!s?.isActive) throw new Error('Invalid session');
 
+  // Get questions already asked in this session
+  const askedQuestions = await prisma.gameQuestion.findMany({
+    where: { sessionId },
+    select: { questionId: true }
+  });
+  const askedQuestionIds = askedQuestions.map(gq => gq.questionId);
+
   const unlockedTopics = GAME_HELPERS.getUnlockedTopics(s.level);
-  const question = await prisma.question.findFirst({
+  
+  // Find questions that haven't been asked yet in this session
+  const availableQuestions = await prisma.question.findMany({
     where: {
       category: { in: unlockedTopics as any },
       isActive: true,
-      level: s.level, // filter by level per requirement
+      level: s.level,
+      id: { notIn: askedQuestionIds }, // Exclude already asked questions
     },
-    orderBy: { createdAt: 'asc' },
   });
-  if (!question) throw new Error('No questions available');
+
+  if (!availableQuestions || availableQuestions.length === 0) {
+    throw new Error('No more questions available for this session');
+  }
+
+  // Randomly select a question from available questions
+  const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+  const question = availableQuestions[randomIndex];
 
   await prisma.gameQuestion.create({ data: { sessionId, questionId: question.id } });
   return { question, timer: GAME_CONSTANTS.TIMER_SECONDS };
@@ -115,7 +131,8 @@ export const getHint = async (userId: string, sessionId: string, questionId: str
   const q: any = question;
   if (!q) throw new Error('Question not found');
 
-  const hintText = `A clue related to ${q.country} and ${String(q.category).toLowerCase()}.`;
+  // Use the actual hint from the question database
+  const hintText = q.hint || `A clue related to ${q.country} and ${String(q.category).toLowerCase()}.`;
 
   if (isAuthenticated) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
