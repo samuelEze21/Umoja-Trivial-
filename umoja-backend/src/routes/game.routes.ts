@@ -25,4 +25,7 @@ router.post('/answer', optionalAuth, gameRateLimit, gameController.submitAnswer)
 // Get a hint for a question (requires coins if authenticated)
 router.post('/hint', optionalAuth, gameRateLimit, gameController.getHint);
 
+// Get session results (works for both guest and authenticated users)
+router.get('/session/:sessionId/results', optionalAuth, gameRateLimit, gameController.getSessionResults);
+
 export default router;

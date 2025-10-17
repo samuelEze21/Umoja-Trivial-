@@ -160,6 +160,56 @@ export const getHint = async (userId: string, sessionId: string, questionId: str
   return { hintText };
 }
 
+export const getSessionResults = async (sessionId: string) => {
+  const session = await prisma.gameSession.findUnique({ 
+    where: { id: sessionId },
+    include: {
+      gameQuestions: {
+        include: {
+          question: true
+        }
+      }
+    }
+  });
+
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const s: any = session;
+  
+  // Calculate statistics
+  const totalQuestions = s.questionsAnswered;
+  const correctAnswers = s.correctAnswers;
+  const incorrectAnswers = totalQuestions - correctAnswers;
+  const completion = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+  const gamePoints = s.coinsEarned;
+  
+  // For Level 1, we expect 20 questions, so skipped = 20 - totalQuestions
+  const expectedQuestions = s.level === 1 ? 20 : s.requiredCorrect;
+  const skipped = Math.max(0, expectedQuestions - totalQuestions);
+
+  return {
+    sessionId: s.id,
+    level: s.level,
+    correctAnswers,
+    totalQuestions,
+    incorrectAnswers,
+    completion,
+    skipped,
+    gamePoints,
+    coinsEarned: s.coinsEarned,
+    coinsSpent: s.coinsSpent,
+    hintsUsed: s.hintsUsed,
+    currentStreak: s.currentStreak,
+    maxStreak: s.maxStreak,
+    startedAt: s.startedAt,
+    completedAt: s.completedAt,
+    isActive: s.isActive,
+    isGuest: s.isGuest
+  };
+}
+
 
 // created by samuel Nwabueze
 // Github: samueleze21

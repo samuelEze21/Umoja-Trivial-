@@ -1,4 +1,4 @@
-// startSession, getQuestion, submitAnswer, getHint, preloadQuestions
+// startSession, getQuestion, submitAnswer, getHint, preloadQuestions, getSessionResults
 import { Response } from 'express';
 import * as gameService from '../services/gameService';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
@@ -92,6 +92,23 @@ export const preloadQuestions = async (req: AuthenticatedRequest, res: Response)
   } catch (error: any) {
     console.error('preloadQuestions error:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to preload questions' });
+  }
+};
+
+export const getSessionResults = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      res.status(400).json({ success: false, error: 'sessionId is required' });
+      return;
+    }
+
+    const results = await gameService.getSessionResults(sessionId);
+    res.json({ success: true, data: results });
+  } catch (error: any) {
+    console.error('getSessionResults error:', error);
+    res.status(400).json({ success: false, error: error.message || 'Failed to get session results' });
   }
 };
 
