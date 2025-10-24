@@ -8,6 +8,8 @@ const authController = new FirebaseAuthController();
 
 // Public routes
 router.post('/firebase-login', generalRateLimit, authController.loginWithFirebase);
+router.post('/phone-auth/initiate', generalRateLimit, authController.initiatePhoneAuth);
+router.post('/phone-auth/verify', generalRateLimit, authController.verifyPhoneOTP);
 
 // Protected routes
 router.get('/profile', authenticateToken, authController.getProfile);

@@ -27,6 +27,8 @@ export const getQuestion = async (req: AuthenticatedRequest, res: Response) => {
     const { question, timer } = await gameService.getNextQuestion(sessionId);
     res.json({ success: true, data: { question, timer } });
   } catch (error: any) {
+    console.error('❌ getQuestion error:', error.message);
+    console.error('❌ Full error:', error);
     res.status(400).json({ success: false, error: error.message || 'Failed to retrieve question' });
   }
 };

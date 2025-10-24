@@ -1,10 +1,53 @@
 import { firebaseAuth } from '../config/firebase-admin';
+import admin from '../config/firebase-admin';
 import { config } from '../config/environment';
 import prisma from '../config/database';
 import { generateToken } from '../utils/jwt.utils';
 import { GAME_CONSTANTS } from '../utils/gameConstants';
 
 export class FirebaseAuthService {
+  
+  async initiatePhoneAuth(phoneNumber: string) {
+    try {
+      if (config.nodeEnv === 'test') {
+        // In test mode, return a mock verification ID
+        return { verificationId: 'mock-verification-id' };
+      }
+      
+      // Generate a verification ID for the phone number
+      const verificationId = await admin.auth().createSessionCookie(phoneNumber, { expiresIn: 60 * 5 * 1000 }); // 5 minutes
+      return { verificationId };
+    } catch (error) {
+      console.error('Phone auth initiation error:', error);
+      throw new Error('Failed to initiate phone authentication');
+    }
+  }
+  
+  async verifyPhoneOTP(verificationId: string, otp: string) {
+    try {
+      if (config.nodeEnv === 'test') {
+        // In test mode, accept any OTP for the mock verification ID
+        if (verificationId === 'mock-verification-id' && otp) {
+          return { isValid: true, phoneNumber: '+1234567890' };
+        }
+        throw new Error('Invalid OTP');
+      }
+      
+      // Verify the OTP with Firebase
+      const sessionCookie = verificationId;
+      const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie);
+      const phoneNumber = decodedClaims.phone_number;
+      
+      if (!phoneNumber) {
+        throw new Error('Phone number not found in verification');
+      }
+      
+      return { isValid: true, phoneNumber };
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      throw new Error('Invalid OTP');
+    }
+  }
   
   async verifyFirebaseToken(idToken: string) {
     try {

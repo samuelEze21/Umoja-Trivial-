@@ -26,6 +26,11 @@ export const getNextQuestion = async (sessionId: string) => {
   const session = await prisma.gameSession.findUnique({ where: { id: sessionId } });
   const s: any = session;
   if (!s?.isActive) throw new Error('Invalid session');
+  
+  // For Level 1, check if we've already asked 20 questions
+  if (s.level === 1 && s.questionsAnswered >= 20) {
+    throw new Error('Level 1 is limited to 20 questions');
+  }
 
   // Get questions already asked in this session
   const askedQuestions = await prisma.gameQuestion.findMany({
@@ -41,7 +46,7 @@ export const getNextQuestion = async (sessionId: string) => {
     where: {
       category: { in: unlockedTopics as any },
       isActive: true,
-      level: s.level,
+      level: { lte: s.level }, // Cumulative access: level <= current level
       id: { notIn: askedQuestionIds }, // Exclude already asked questions
     },
   });
@@ -79,16 +84,34 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
   });
 
   if (!isCorrect) {
+    const newTotalQuestions = s.questionsAnswered + 1;
+    
     await prisma.gameSession.update({
       where: { id: sessionId },
       data: { questionsAnswered: { increment: 1 } },
     });
-    return { isCorrect, correctAnswer: q.correctAnswer, coinsEarned: 0, requireRegistration: false };
+    
+    // Check if Level 1 should complete after 20 total questions (even with wrong answer)
+    const shouldComplete = s.level === 1 && newTotalQuestions >= 20;
+    
+    return { 
+      isCorrect, 
+      correctAnswer: q.correctAnswer, 
+      coinsEarned: 0, 
+      requireRegistration: shouldComplete && !isAuthenticated,
+      levelComplete: shouldComplete
+    };
   }
 
   const coinsEarned = GAME_HELPERS.getCoinsEarned(s.level);
   const newCorrect = s.correctAnswers + 1;
-  const reachedThreshold = newCorrect >= s.requiredCorrect;
+  const newTotalQuestions = s.questionsAnswered + 1;
+  
+  // For Level 1: complete after 20 total questions
+  // For other levels: complete after reaching required correct answers
+  const reachedThreshold = s.level === 1 
+    ? newTotalQuestions >= 20 
+    : newCorrect >= s.requiredCorrect;
 
   await prisma.gameSession.update({
     where: { id: sessionId },
@@ -101,8 +124,8 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
 
   if (reachedThreshold) {
     if (!isAuthenticated && s.level === GAME_CONSTANTS.INITIAL_LEVEL) {
-      // Registration required after 20 correct at level 1 for guests
-      return { isCorrect, correctAnswer: q.correctAnswer, coinsEarned, requireRegistration: true };
+      // Registration required after completion of level 1 for guests
+      return { isCorrect, correctAnswer: q.correctAnswer, coinsEarned, requireRegistration: true, levelComplete: true };
     }
     // Authenticated users level up
     await prisma.gameSession.update({
@@ -119,6 +142,7 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
     correctAnswer: q.correctAnswer,
     coinsEarned,
     requireRegistration: false,
+    levelComplete: reachedThreshold,
   };
 };
 

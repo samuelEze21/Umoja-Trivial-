@@ -56,10 +56,22 @@ export const GAME_HELPERS = {
    * Get unlocked topics for a level
    */
   getUnlockedTopics: (level: number): QuestionCategory[] => {
-    return [
-      ...GAME_CONSTANTS.INITIAL_TOPICS,
-      ...GAME_CONSTANTS.ALL_TOPICS.slice(GAME_CONSTANTS.INITIAL_TOPICS.length, GAME_CONSTANTS.INITIAL_TOPICS.length + (level - 1)),
-    ].filter(t => (GAME_CONSTANTS.MANDATORY_TOPICS as readonly string[]).includes(t as string) || level > 1);
+    // Start with all mandatory topics (always available)
+    const unlockedTopics = new Set<QuestionCategory>([...GAME_CONSTANTS.MANDATORY_TOPICS]);
+    
+    // Add initial topics
+    GAME_CONSTANTS.INITIAL_TOPICS.forEach(topic => unlockedTopics.add(topic));
+    
+    // Add additional topics based on level progression
+    if (level > 1) {
+      const additionalTopics = GAME_CONSTANTS.ALL_TOPICS.slice(
+        GAME_CONSTANTS.INITIAL_TOPICS.length, 
+        GAME_CONSTANTS.INITIAL_TOPICS.length + (level - 1)
+      );
+      additionalTopics.forEach(topic => unlockedTopics.add(topic));
+    }
+    
+    return Array.from(unlockedTopics);
   },
 } as const;
 
