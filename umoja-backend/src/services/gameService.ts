@@ -27,17 +27,17 @@ export const getNextQuestion = async (sessionId: string) => {
   const s: any = session;
   if (!s?.isActive) throw new Error('Invalid session');
   
-  // For Level 1, check if we've already asked 20 questions
-  if (s.level === 1 && s.questionsAnswered >= 20) {
-    throw new Error('Level 1 is limited to 20 questions');
-  }
-
   // Get questions already asked in this session
   const askedQuestions = await prisma.gameQuestion.findMany({
     where: { sessionId },
     select: { questionId: true }
   });
   const askedQuestionIds = askedQuestions.map(gq => gq.questionId);
+  
+  // For Level 1, check if we've already asked 20 questions (use actual count)
+  if (s.level === 1 && askedQuestions.length >= 20) {
+    throw new Error('Level 1 is limited to 20 questions');
+  }
 
   const unlockedTopics = GAME_HELPERS.getUnlockedTopics(s.level);
   
@@ -84,15 +84,21 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
   });
 
   if (!isCorrect) {
-    const newTotalQuestions = s.questionsAnswered + 1;
+    // Get actual count of questions in this session
+    const questionCount = await prisma.gameQuestion.count({
+      where: { sessionId }
+    });
+    
+    // Only increment if we haven't reached the limit
+    const newTotalQuestions = Math.min(questionCount, s.level === 1 ? 20 : s.requiredCorrect);
     
     await prisma.gameSession.update({
       where: { id: sessionId },
-      data: { questionsAnswered: { increment: 1 } },
+      data: { questionsAnswered: newTotalQuestions },
     });
     
     // Check if Level 1 should complete after 20 total questions (even with wrong answer)
-    const shouldComplete = s.level === 1 && newTotalQuestions >= 20;
+    const shouldComplete = s.level === 1 && questionCount >= 20;
     
     return { 
       isCorrect, 
@@ -105,18 +111,25 @@ export const submitAnswer = async (sessionId: string, questionId: string, select
 
   const coinsEarned = GAME_HELPERS.getCoinsEarned(s.level);
   const newCorrect = s.correctAnswers + 1;
-  const newTotalQuestions = s.questionsAnswered + 1;
+  
+  // Get actual count of questions in this session
+  const questionCount = await prisma.gameQuestion.count({
+    where: { sessionId }
+  });
+  
+  // Only set questionsAnswered to actual count, capped at level limits
+  const newTotalQuestions = Math.min(questionCount, s.level === 1 ? 20 : s.requiredCorrect);
   
   // For Level 1: complete after 20 total questions
   // For other levels: complete after reaching required correct answers
   const reachedThreshold = s.level === 1 
-    ? newTotalQuestions >= 20 
+    ? questionCount >= 20 
     : newCorrect >= s.requiredCorrect;
 
   await prisma.gameSession.update({
     where: { id: sessionId },
     data: {
-      questionsAnswered: { increment: 1 },
+      questionsAnswered: newTotalQuestions,
       correctAnswers: reachedThreshold ? newCorrect : { increment: 1 }, // exact set when crossing threshold
       coinsEarned: { increment: coinsEarned },
     } as any,
